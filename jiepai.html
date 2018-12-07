@@ -1,0 +1,555 @@
+﻿<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0"/>
+    <title>节拍器</title>
+    <style type="text/css">
+      body {
+        margin:0; 
+        padding:0;
+        width: 100%;
+        text-align: center;
+      }
+      #canvas {
+        border: 1px solid #312B2B; 
+        /*box-shadow: 0px 0px 2px 2px #494949;*/
+      }
+
+      #startButton{
+        width: 80px;
+        height: 40px;
+        background-color: transparent;
+        border: 1px solid #000000;
+        position: absolute;
+        left: 50%;
+        top: 530px;
+        border-radius: 20px;
+        margin-left: -40px;
+      }
+
+      #timesInput{
+        width: 120px;
+        height: 40px;
+        font-size: 48px;
+        position: absolute;
+        left: 50%;
+        top: 20px;
+        text-align: center;
+        border: none;
+        margin-left: -60px;
+      }
+    </style>
+  </head>
+  <body>
+    <!--设置界面，从30-200范围-->
+
+    <!--显示动画-->
+    <canvas id="canvas" width="350px" height="600px">
+      你的浏览器居然不支持Canvas？！赶快换一个吧！！
+    </canvas>
+    <div id="startButton"></div>
+    <input id="timesInput" type="number" min="30" step="1" max="200" value="30"></input>
+    <audio id='audioPlay' src='ding.wav' hidden='true'></audio>
+
+    <script type="text/javascript" src="config.js"></script>
+    <script type="text/javascript">
+      var canvas = document.getElementById("canvas");
+      var ctx = canvas.getContext("2d");
+
+      var width = 350;
+      var height = 600;
+      var split = height * 0.02;
+      var innerBottom = 100;
+      var innerTop = 100;
+
+
+      var createArc = function(attrs) {
+        ctx.save();
+        ctx.beginPath();
+        ctx.fillStyle = attrs.color || color();
+        ctx.arc(attrs.x, attrs.y, attrs.r, 0, Math.PI*2);
+        ctx.closePath();
+        ctx.fill();
+        ctx.restore();
+      };
+
+      var createLine = function(from, to, width, color) {
+        ctx.save();
+        ctx.beginPath();
+        ctx.moveTo(from.x, from.y);
+        ctx.lineTo(to.x, to.y);
+        ctx.lineWidth = width;
+        ctx.strokeStyle = color;
+        ctx.stroke();
+        ctx.closePath();
+        ctx.restore();
+      }
+
+      var createLines = function(from, tos, width, color) {
+        ctx.save();
+        ctx.beginPath();
+        ctx.moveTo(from.x, from.y);
+        for (to in tos){
+          ctx.lineTo(tos[to].x, tos[to].y);
+        }
+        ctx.closePath();
+        ctx.lineWidth = width;
+        ctx.strokeStyle = color;
+        ctx.fillStyle = color;
+        ctx.fill();
+        ctx.stroke();
+        ctx.restore();
+      }
+
+      // 
+      //绘制背景图
+      var createBG = function(){
+        ctx.save();
+        //绘制第一圈的红色
+        ctx.beginPath();
+        ctx.moveTo(-split, height);
+        ctx.arcTo(width / 4, innerTop, width / 2, innerTop, 70);
+        ctx.arcTo(width * 3 / 4, innerTop, width + split, height, 70);
+        ctx.lineTo(width + split, height);
+        ctx.closePath();
+        ctx.lineWidth = 40;
+        ctx.strokeStyle = "#CC2D4E";
+        ctx.stroke();
+        // 绘制第二圈的黑色
+        ctx.beginPath();
+        ctx.moveTo(-split, height);
+        ctx.arcTo(width / 4, innerTop, width / 2, innerTop, 70);
+        ctx.arcTo(width * 3 / 4, innerTop, width + split, height, 70);
+        ctx.lineTo(width + split, height);
+        ctx.closePath();
+        ctx.lineWidth = 12;
+        ctx.strokeStyle = "#312B2B";
+        //填充
+        ctx.fillStyle = "#312B2B";
+        ctx.fill();
+        ctx.stroke();
+        //绘制最内圈的界面
+        ctx.beginPath();
+        ctx.moveTo(width / 2, height - innerBottom);
+        ctx.arcTo(15, height - innerBottom, width / 4 + 10, innerTop + 10, 20);
+        ctx.arcTo(width / 4 + 10, innerTop + 10, width / 2, innerTop + 10, 70);
+        ctx.arcTo(width * 3 / 4 - 10, innerTop + 10, width - 10, height - innerBottom, 70);
+        ctx.arcTo(width - 10, height - innerBottom, width / 2, height - innerBottom, 20);
+        ctx.lineTo(width / 2, height - innerBottom);
+        ctx.closePath();
+        ctx.lineWidth = 1;
+        ctx.strokeStyle = "#000000";
+        //填充
+        ctx.fillStyle = "#BCA289";
+        ctx.fill();
+        ctx.stroke();  
+        ctx.restore();
+
+        //绘制刻度
+        //左刻度
+        createLine({x: width / 2 - 12, y: height - innerBottom - 50}, {x: width / 2 - 12, y: innerTop + 50}, 4, "#968366");
+        createLine({x: width / 2 - 12, y: height - innerBottom - 52}, {x: width / 2 - 35, y: height - innerBottom - 52}, 4, "#968366");
+        createLine({x: width / 2 - 12, y: innerTop + 52}, {x: width / 2 - 35, y: 152}, 4, "#968366");
+        createLine({x: width / 2 - 12, y: height - innerBottom - 52 - (height - innerTop - innerBottom - 100) * 0.15}, 
+                    {x: width / 2 - 35, y: height - innerBottom - 52 - (height - innerTop - innerBottom - 100) * 0.15}, 4, "#968366");
+        createLine({x: width / 2 - 12, y: height - innerBottom - 52 - (height - innerTop - innerBottom - 100) * 0.3}, 
+                    {x: width / 2 - 35, y: height - innerBottom - 52 - (height - innerTop - innerBottom - 100) * 0.3}, 4, "#968366");
+        createLine({x: width / 2 - 12, y: height - innerBottom - 52 - (height - innerTop - innerBottom - 100) * 0.45}, 
+                    {x: width / 2 - 35, y: height - innerBottom - 52 - (height - innerTop - innerBottom - 100) * 0.45}, 4, "#968366");
+        createLine({x: width / 2 - 12, y: height - innerBottom - 52 - (height - innerTop - innerBottom - 100) * 0.60}, 
+                    {x: width / 2 - 35, y: height - innerBottom - 52 - (height - innerTop - innerBottom - 100) * 0.60}, 4, "#968366");
+        createLine({x: width / 2 - 12, y: height - innerBottom - 52 - (height - innerTop - innerBottom - 100) * 0.72}, 
+                    {x: width / 2 - 35, y: height - innerBottom - 52 - (height - innerTop - innerBottom - 100) * 0.72}, 4, "#968366");
+        createLine({x: width / 2 - 12, y: height - innerBottom - 52 - (height - innerTop - innerBottom - 100) * 0.82}, 
+                    {x: width / 2 - 35, y: height - innerBottom - 52 - (height - innerTop - innerBottom - 100) * 0.82}, 4, "#968366");
+        createLine({x: width / 2 - 12, y: height - innerBottom - 52 - (height - innerTop - innerBottom - 100) * 0.9}, 
+                    {x: width / 2 - 35, y: height - innerBottom - 52 - (height - innerTop - innerBottom - 100) * 0.9}, 4, "#968366");
+        createLine({x: width / 2 - 12, y: height - innerBottom - 52 - (height - innerTop - innerBottom - 100) * 0.95}, 
+                    {x: width / 2 - 35, y: height - innerBottom - 52 - (height - innerTop - innerBottom - 100) * 0.95}, 4, "#968366");
+        //右刻度
+        createLine({x: width / 2 + 12, y: height - innerBottom - 50}, {x: width / 2 + 12, y: innerTop + 55}, 4, "#968366");
+        createLine({x: width / 2 + 12, y: height - innerBottom - 52}, {x: width / 2 + 35, y: height - innerBottom - 52}, 4, "#968366");
+        createLine({x: width / 2 + 12, y: innerTop + 57}, {x: width / 2 + 35, y: 157}, 4, "#968366");
+        createLine({x: width / 2 + 12, y: height - innerBottom - 52 - (height - innerTop - innerBottom - 105) * 0.2}, 
+                    {x: width / 2 + 35, y: height - innerBottom - 52 - (height - innerTop - innerBottom - 105) * 0.2}, 4, "#968366");
+        createLine({x: width / 2 + 12, y: height - innerBottom - 52 - (height - innerTop - innerBottom - 105) * 0.38}, 
+                    {x: width / 2 + 35, y: height - innerBottom - 52 - (height - innerTop - innerBottom - 105) * 0.38}, 4, "#968366");
+        createLine({x: width / 2 + 12, y: height - innerBottom - 52 - (height - innerTop - innerBottom - 105) * 0.55}, 
+                    {x: width / 2 + 35, y: height - innerBottom - 52 - (height - innerTop - innerBottom - 105) * 0.55}, 4, "#968366");
+        createLine({x: width / 2 + 12, y: height - innerBottom - 52 - (height - innerTop - innerBottom - 105) * 0.70}, 
+                    {x: width / 2 + 35, y: height - innerBottom - 52 - (height - innerTop - innerBottom - 105) * 0.70}, 4, "#968366");
+        createLine({x: width / 2 + 12, y: height - innerBottom - 52 - (height - innerTop - innerBottom - 105) * 0.82}, 
+                    {x: width / 2 + 35, y: height - innerBottom - 52 - (height - innerTop - innerBottom - 105) * 0.82}, 4, "#968366");
+        createLine({x: width / 2 + 12, y: height - innerBottom - 52 - (height - innerTop - innerBottom - 105) * 0.9}, 
+                    {x: width / 2 + 35, y: height - innerBottom - 52 - (height - innerTop - innerBottom - 105) * 0.9}, 4, "#968366");
+        createLine({x: width / 2 + 12, y: height - innerBottom - 52 - (height - innerTop - innerBottom - 105) * 0.95}, 
+                    {x: width / 2 + 35, y: height - innerBottom - 52 - (height - innerTop - innerBottom - 105) * 0.95}, 4, "#968366");
+
+        ctx.restore();
+      }
+
+      //绘制标记杆
+      //正角度往右，负角度往左
+      var createMark = function(angle, top){
+        var x = 0;
+        var y = 1;
+        if (angle != 0){
+          x = Math.sin(2 * Math.PI / 360 * angle);
+          y = Math.cos(2 * Math.PI / 360 * angle);
+        }
+
+        var markWidth = 10;
+        var markHeight = height - 220;
+        var markLeft = (width - markWidth) / 2;
+        var markTop = 100;
+
+        ctx.save();
+        //左下角
+        ctx.beginPath();
+        ctx.moveTo(markLeft, markHeight + markTop);
+        //从左上角到右上角
+        ctx.arcTo(markLeft + x*markHeight, markHeight + markTop - y*markHeight, 
+                  markLeft + x*markHeight + markWidth, markHeight + markTop - y*markHeight, 5);
+        //从右上角到右下角
+        ctx.arcTo(markLeft + x*markHeight + markWidth, markHeight + markTop - y*markHeight, 
+                  markLeft + markWidth, markHeight + markTop, 5);
+        ctx.lineTo(markLeft + markWidth, markHeight + markTop);
+        ctx.closePath();
+
+        ctx.lineWidth = 1;
+        ctx.strokeStyle = "#D7D7D9";
+        //填充
+        ctx.fillStyle = "#D7D7D9";
+        ctx.fill();
+        ctx.stroke();  
+        //绘制摇杆
+        var rectHeight = 70;
+        var rectTop = 120 + rectHeight + top;
+        var rectLength = markHeight + markTop - rectTop;
+        var rectLength2 = Math.sqrt(rectLength * rectLength + 15*15);
+        var rectLength3 = Math.sqrt((rectLength + rectHeight)*(rectLength + rectHeight) + 30*30); 
+
+        var angle2 = Math.acos(rectLength / rectLength2) / (Math.PI / 180);
+        var angle3 = Math.acos((rectLength + rectHeight) / rectLength3) / (Math.PI / 180);
+
+        var x2 = Math.sin(2 * Math.PI / 360 * angle2);
+        var y2 = Math.cos(2 * Math.PI / 360 * angle2);
+        var x3 = Math.sin(2 * Math.PI / 360 * angle3);
+        var y3 = Math.cos(2 * Math.PI / 360 * angle3);
+
+        ctx.beginPath();
+        //穿过象限，计算角度
+        //4种情况
+        // 往右走
+        //1. 左下角和左上角未过中心
+        //2. 左下角已过中心但是左上角未过
+        //3. 都过中心点
+        // 往左走
+        //1. 右下角和右上角未过中心
+        //2. 右下角已过中心但是右上交未过
+        //3. 都过中心点
+        
+        // console.log("1: " + angle + " 2:" + angle2 + " 3:" + angle3);
+        
+        if (angle > 0){
+          if (angle <= angle2){
+            var y21 = Math.cos(2 * Math.PI / 360 * (angle2 - angle));
+            var y31 = Math.cos(2 * Math.PI / 360 * (angle3 - angle));
+
+            var y22 = Math.cos(2 * Math.PI / 360 * (angle + angle2));
+            var y32 = Math.cos(2 * Math.PI / 360 * (angle + angle3));
+
+            //中间点
+            ctx.moveTo(width / 2 + x*rectLength, rectTop + (1-y)*rectLength);
+            //左下角到左上角
+            ctx.arcTo(width / 2 - 15 + x*rectLength2, rectTop - (1-y21)*rectLength2, 
+                      width / 2 - 30 + x*rectLength3, rectTop - rectHeight - (1-y3)*rectLength3 + (1-y31)*rectLength3, 10);
+            //左上角到右上角
+            ctx.arcTo(width / 2 - 30 + x*rectLength3, rectTop - rectHeight - (1-y3)*rectLength3 + (1-y31)*rectLength3, 
+                      width / 2 + 30 + x*rectLength3, rectTop - rectHeight + (1-y32)*rectLength3, 10);
+            //右上角到右下角
+            ctx.arcTo(width / 2 + 30 + x*rectLength3, rectTop - rectHeight + (1-y32)*rectLength3, 
+                      width / 2 + 15 + x*rectLength2, rectTop + (1-y22)*rectLength2, 10);
+            //右下角到中间
+            ctx.arcTo(width / 2 + 15 + x*rectLength2, rectTop + (1-y22)*rectLength2, 
+                      width / 2 + x*rectLength, rectTop + (1-y)*rectLength , 10);
+            ctx.lineTo(width / 2 + x*rectLength, rectTop + (1-y)*rectLength);
+          } else if (angle > angle2 && angle <= angle3){
+            var y21 = Math.cos(2 * Math.PI / 360 * (angle - angle2));
+            var y31 = Math.cos(2 * Math.PI / 360 * (angle3 - angle));
+
+            var y22 = Math.cos(2 * Math.PI / 360 * (angle + angle2));
+            var y32 = Math.cos(2 * Math.PI / 360 * (angle + angle3));
+
+            //中间点
+            ctx.moveTo(width / 2 + x*rectLength, rectTop + (1-y) * rectLength);
+            //左下角到左上角
+            ctx.arcTo(width / 2 - 15 + x*rectLength2, rectTop - (1-y2)*rectLength2 + (1-y21)*rectLength2, 
+                      width / 2 - 30 + x*rectLength3, rectTop - rectHeight - (1-y3)*rectLength3 - (1-y31)*rectLength3, 10);
+            //左上角到右上角
+            ctx.arcTo(width / 2 - 30 + x*rectLength3, rectTop - rectHeight - (1-y3)*rectLength3 - (1-y31)*rectLength3, 
+                      width / 2 + 30 + x*rectLength3, rectTop - rectHeight + (1-y32)*rectLength3, 10);
+            //右上角到右下角
+            ctx.arcTo(width / 2 + 30 + x*rectLength3, rectTop - rectHeight + (1-y32)*rectLength3, 
+                      width / 2 + 15 + x*rectLength2, rectTop + (1-y22)*rectLength2, 10);
+            //右下角到中间
+            ctx.arcTo(width / 2 + 15 + x*rectLength2, rectTop + (1-y22)*rectLength2, 
+                      width / 2 + x*rectLength, rectTop + (1-y)*rectLength , 10);
+            ctx.lineTo(width / 2 + x*rectLength, rectTop + (1-y)*rectLength);
+          } else if (angle > angle2 && angle > angle3) {
+            var y21 = Math.cos(2 * Math.PI / 360 * (angle - angle2));
+            var y31 = Math.cos(2 * Math.PI / 360 * (angle - angle3));
+
+            var y22 = Math.cos(2 * Math.PI / 360 * (angle + angle2));
+            var y32 = Math.cos(2 * Math.PI / 360 * (angle + angle3));
+
+            //中间点
+            ctx.moveTo(width / 2 + x*rectLength, rectTop + (1-y) * rectLength);
+            //左下角到左上角
+            ctx.arcTo(width / 2 - 15 + x*rectLength2, rectTop - (1-y2)*rectLength2 + (1-y21)*rectLength2, 
+                      width / 2 - 30 + x*rectLength3, rectTop - rectHeight - (1-y3)*rectLength3 + (1-y31)*rectLength3, 10);
+            //左上角到右上角
+            ctx.arcTo(width / 2 - 30 + x*rectLength3, rectTop - rectHeight - (1-y3)*rectLength3 + (1-y31)*rectLength3, 
+                      width / 2 + 30 + x*rectLength3, rectTop - rectHeight + (1-y32)*rectLength3, 10);
+            //右上角到右下角
+            ctx.arcTo(width / 2 + 30 + x*rectLength3, rectTop - rectHeight + (1-y32)*rectLength3, 
+                      width / 2 + 15 + x*rectLength2, rectTop + (1-y22)*rectLength2, 10);
+            //右下角到中间
+            ctx.arcTo(width / 2 + 15 + x*rectLength2, rectTop + (1-y22)*rectLength2, 
+                      width / 2 + x*rectLength, rectTop + (1-y)*rectLength , 10);
+            ctx.lineTo(width / 2 + x*rectLength, rectTop + (1-y)*rectLength);
+          }
+        } else if (angle < 0){
+          if (Math.abs(angle) <= angle2){
+            var y21 = Math.cos(2 * Math.PI / 360 * (Math.abs(angle) + angle2));
+            var y31 = Math.cos(2 * Math.PI / 360 * (Math.abs(angle) + angle3));
+
+            var y22 = Math.cos(2 * Math.PI / 360 * (angle2 - Math.abs(angle)));
+            var y32 = Math.cos(2 * Math.PI / 360 * (angle3 - Math.abs(angle)));
+
+            //中间点
+            ctx.moveTo(width / 2 + x*rectLength, rectTop + (1-y)*rectLength);
+            //左下角到左上角
+            ctx.arcTo(width / 2 - 15 + x*rectLength2, rectTop + (1-y21)*rectLength2, 
+                      width / 2 - 30 + x*rectLength3, rectTop - rectHeight - (1-y3)*rectLength3 + (1-y31)*rectLength3, 10);
+            //左上角到右上角
+            ctx.arcTo(width / 2 - 30 + x*rectLength3, rectTop - rectHeight - (1-y3)*rectLength3 + (1-y31)*rectLength3, 
+                      width / 2 + 30 + x*rectLength3, rectTop - rectHeight + (1-y32)*rectLength3, 10);
+            //右上角到右下角
+            ctx.arcTo(width / 2 + 30 + x*rectLength3, rectTop - rectHeight + (1-y32)*rectLength3, 
+                      width / 2 + 15 + x*rectLength2, rectTop + (1-y22)*rectLength2, 10);
+            //右下角到中间
+            ctx.arcTo(width / 2 + 15 + x*rectLength2, rectTop + (1-y22)*rectLength2, 
+                      width / 2 + x*rectLength, rectTop + (1-y)*rectLength , 10);
+            ctx.lineTo(width / 2 + x*rectLength, rectTop + (1-y)*rectLength);
+          } else if (Math.abs(angle) > angle2 && Math.abs(angle) <= angle3){
+            var y21 = Math.cos(2 * Math.PI / 360 * (Math.abs(angle) + angle2));
+            var y31 = Math.cos(2 * Math.PI / 360 * (Math.abs(angle) + angle3));
+
+            var y22 = Math.cos(2 * Math.PI / 360 * (Math.abs(angle) - angle2));
+            var y32 = Math.cos(2 * Math.PI / 360 * (angle3 - Math.abs(angle)));
+
+            //中间点
+            ctx.moveTo(width / 2 + x*rectLength, rectTop + (1-y) * rectLength);
+            //左下角到左上角
+            ctx.arcTo(width / 2 - 15 + x*rectLength2, rectTop + (1-y21)*rectLength2, 
+                      width / 2 - 30 + x*rectLength3, rectTop - rectHeight - (1-y3)*rectLength3 + (1-y31)*rectLength3, 10);
+            //左上角到右上角
+            ctx.arcTo(width / 2 - 30 + x*rectLength3, rectTop - rectHeight - (1-y3)*rectLength3 + (1-y31)*rectLength3, 
+                      width / 2 + 30 + x*rectLength3, rectTop - rectHeight - (1-y32)*rectLength3, 10);
+            //右上角到右下角
+            ctx.arcTo(width / 2 + 30 + x*rectLength3, rectTop - rectHeight - (1-y32)*rectLength3, 
+                      width / 2 + 15 + x*rectLength2, rectTop - (1-y2)*rectLength2 + (1-y22)*rectLength2, 10);
+            //右下角到中间
+            ctx.arcTo(width / 2 + 15 + x*rectLength2, rectTop - (1-y2)*rectLength2 + (1-y22)*rectLength2, 
+                      width / 2 + x*rectLength, rectTop + (1-y)*rectLength , 10);
+            ctx.lineTo(width / 2 + x*rectLength, rectTop + (1-y)*rectLength);
+          } else if (Math.abs(angle) > angle2 && Math.abs(angle) > angle3) {
+            var y21 = Math.cos(2 * Math.PI / 360 * (angle - angle2));
+            var y31 = Math.cos(2 * Math.PI / 360 * (angle - angle3));
+
+            var y22 = Math.cos(2 * Math.PI / 360 * (angle + angle2));
+            var y32 = Math.cos(2 * Math.PI / 360 * (angle + angle3));
+
+            //中间点
+            ctx.moveTo(width / 2 + x*rectLength, rectTop + (1-y) * rectLength);
+            //左下角到左上角
+            ctx.arcTo(width / 2 - 15 + x*rectLength2, rectTop - (1-y2)*rectLength2 + (1-y21)*rectLength2, 
+                      width / 2 - 30 + x*rectLength3, rectTop - rectHeight - (1-y3)*rectLength3 + (1-y31)*rectLength3, 10);
+            //左上角到右上角
+            ctx.arcTo(width / 2 - 30 + x*rectLength3, rectTop - rectHeight - (1-y3)*rectLength3 + (1-y31)*rectLength3, 
+                      width / 2 + 30 + x*rectLength3, rectTop - rectHeight + (1-y32)*rectLength3, 10);
+            //右上角到右下角
+            ctx.arcTo(width / 2 + 30 + x*rectLength3, rectTop - rectHeight + (1-y32)*rectLength3, 
+                      width / 2 + 15 + x*rectLength2, rectTop + (1-y22)*rectLength2, 10);
+            //右下角到中间
+            ctx.arcTo(width / 2 + 15 + x*rectLength2, rectTop + (1-y22)*rectLength2, 
+                      width / 2 + x*rectLength, rectTop + (1-y)*rectLength , 10);
+            ctx.lineTo(width / 2 + x*rectLength, rectTop + (1-y)*rectLength);
+          }
+        } else {
+          ctx.moveTo(width / 2, rectTop);
+          ctx.arcTo(width / 2 - 15, rectTop, 
+                    width / 2 - 30, rectTop - rectHeight, 10);
+          ctx.arcTo(width / 2 - 30, rectTop - rectHeight, 
+                    width / 2 + 30, rectTop - rectHeight, 10);
+          ctx.arcTo(width / 2 + 30, rectTop - rectHeight, 
+                    width / 2 + 15, rectTop, 10);
+          ctx.arcTo(width / 2 + 15, rectTop, 
+                    width / 2, rectTop, 10);
+          ctx.lineTo(width / 2, rectTop);
+        }
+
+        ctx.closePath();
+        ctx.lineWidth = 1;
+        ctx.strokeStyle = "#F6AC46";
+        //填充
+        ctx.fillStyle = "#F4C746";
+        ctx.fill();
+        ctx.stroke();  
+        ctx.restore();
+      }
+
+      //最小角度
+      var minAngle = 0;
+      //最大角度
+      var maxAngle = 20;
+      //每次间隔
+      var addAngle = 0.4;
+      var angle = -maxAngle;
+
+      var start = false;
+      //节拍次数
+      var times = 30;
+      //时间间隔
+      var clocks = 40;
+      var mstimes = 2*60*1000.0/times;
+      var audio = document.getElementById("audioPlay");
+
+      var startTime;
+      var mscounts = maxAngle * 2 / addAngle;
+      var count = 0;
+
+       function toDecimal(x) {  
+            var f = parseFloat(x);  
+            if (isNaN(f)) {  
+                return 0;  
+            }  
+            f = Math.round(x*10)/10;  
+            return f;  
+        }  
+
+      var takeTime = function(){
+        //绘制背景
+        ctx.clearRect(0, 0, width, height);
+        createBG();
+        //绘制摆动数值
+        if (start){
+          createMark(angle, times);
+          angle = angle + addAngle;
+          count++;
+          if (toDecimal(angle) >= maxAngle){
+            addAngle = -addAngle;
+            //最左边
+            console.log(mstimes);
+            console.timeEnd(2);
+            // console.log("叮");
+            // console.log(count);
+            audio.play();
+            console.time(1);
+            startTime = new Date().getTime();
+            count = 0;
+          } else if (toDecimal(angle) <= -maxAngle){
+            addAngle = -addAngle;
+            //最右边
+            console.log(mstimes);
+            console.timeEnd(1);
+            // console.log("咚");
+            // console.log(count);
+            audio.play();
+            console.time(2);
+            startTime = new Date().getTime();
+            count = 0;
+          } 
+          //停止按钮
+          createLine({x: width / 2 - 8, y: height - 63}, {x: width / 2 - 8, y: height - 40}, 4, "#F4B83C");
+          createLine({x: width / 2 + 8, y: height - 63}, {x: width / 2 + 8, y: height - 40}, 4, "#F4B83C");
+
+          var offset = new Date().getTime() - (startTime + count * clocks);
+          var nextTime = clocks - offset;
+          
+          //要根据最后一步的偏移量计算最后的时间差
+          if (count == mscounts - 1){
+            var prevTime = new Date().getTime() - startTime;
+            nextTime = mstimes - prevTime;
+            // console.log("最后一下：" + nextTime + " " + clocks);
+          }
+        
+          if (nextTime < 0) nextTime = 0;
+          setTimeout(takeTime, nextTime);
+        } else {
+          angle = 0;
+          addAngle = Math.abs(addAngle);
+          //范围从30-200
+          createMark(angle, times);
+          //开始按钮的三角形
+          createLines({x: width / 2 - 6, y: height - 60},
+                      [{x: width / 2 - 6, y: height - 40},
+                      {x: width / 2 + 10, y: height - 50}], 
+                      4, "#F4B83C");
+        }
+      }
+
+      //最快是20ms
+      setTimeout(takeTime, 0);
+
+      document.getElementById("startButton").addEventListener("click", function(){
+          start = !start;
+          if (start){
+            document.getElementById("timesInput").value = times;           
+            angle = -maxAngle;
+            addAngle = Math.abs(addAngle);
+            startTime = new Date().getTime();
+            count = 0;
+            setTimeout(takeTime, 0);
+          }
+      });
+
+      document.getElementById("timesInput").addEventListener("blur", function(){
+          var tmptimes = parseInt(document.getElementById("timesInput").value);
+
+          if (isNaN(tmptimes)){
+            tmptimes = 30;
+          }
+          if (tmptimes < 30){
+            tmptimes = 30;
+          } 
+          if (tmptimes > 200){
+            tmptimes = 200;
+          }
+
+          document.getElementById("timesInput").value = tmptimes;
+          times = tmptimes;
+          
+          //从配置文件那里得出所有的数据
+          for (var i = 0, len = configs.length; i < len; i++){
+            var config = configs[i];
+            if (config.num == times){
+              //最大角度
+              //maxAngle = 20;
+              //每次间隔
+              addAngle = config.addangle;
+              //节拍次数
+              // times = config;
+              //时间间隔
+              clocks = config.clocks;
+              mstimes = 2*60*1000.0/times;
+              mscounts = maxAngle * 2 / addAngle;
+            }
+          }
+      });
+
+    </script>
+  </body>
+</html>
