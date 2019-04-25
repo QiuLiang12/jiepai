@@ -32,27 +32,31 @@
       }
 
       #timesInput{
-        width: 120px;
-        height: 50px;
+        width: 110px;
+        max-width: 110px;
+        min-width: 110px;
+        height: 45px;
+        line-height: 45px;
         font-size: 48px;
         position: absolute;
         left: 50%;
         top: 20px;
         text-align: center;
         border: none;
-        margin-left: -50px;
+        margin-left: -60px;
+        background: transparent;
       }
     </style>
   </head>
   <body>
-    <!--设置界面，从30-200范围-->
+    <!--设置界面，从30-130范围-->
 
     <!--显示动画-->
     <canvas id="canvas" width="350px" height="600px">
       你的浏览器居然不支持Canvas？！赶快换一个吧！！
     </canvas>
     <div id="startButton"></div>
-    <input id="timesInput" type="number" min="30" step="1" max="200" value="30"></input>
+    <input id="timesInput" type="number" min="30" step="1" max="130" value="30"></input>
     <audio id='audioPlay1' src='jiepai_jixie.wav' controls="controls" style="visibility: hidden;">
       你的浏览器居然不支持audio？！赶快换一个吧！！
     </audio>
@@ -419,35 +423,63 @@
         ctx.restore();
       }
 
+
+      //节拍次数
+      var times = 30;
       //最小角度
       var minAngle = 0;
       //最大角度
       var maxAngle = 20;
       //每次间隔
-      var addAngle = 0.4;
+      var addAngle = 0.5;                         //初始值
       var angle = -maxAngle;
+      //时间间隔
+      var clocks = 25;                            //初始值
+      //节拍时长
+      var mstimes = 60*1000.0/times;              //初始值
+      //拍动次数
+      var mscounts = maxAngle * 2 / addAngle;     //初始值
 
       var start = false;
-      //节拍次数
-      var times = 30;
-      //时间间隔
-      var clocks = 40;
-      var mstimes = 2*60*1000.0/times;
+      var startTime;
+      var count = 0;
+
       var audio1 = document.getElementById("audioPlay1");
       var audio2 = document.getElementById("audioPlay2");
 
-      var startTime;
-      var mscounts = maxAngle * 2 / addAngle;
-      var count = 0;
+      function toDecimal(x) {  
+          var f = parseFloat(x);  
+          if (isNaN(f)) {  
+              return 0;  
+          }  
+          f = Math.round(x*10)/10;  
+          return f;  
+      }  
 
-       function toDecimal(x) {  
-            var f = parseFloat(x);  
-            if (isNaN(f)) {  
-                return 0;  
-            }  
-            f = Math.round(x*10)/10;  
-            return f;  
-        }  
+      function getConfig() {
+        //从配置文件那里得出所有的数据
+        for (var i = 0, len = configs.length; i < len; i++){
+            var config = configs[i];
+            if (config.num == times){
+              //最大角度
+              //maxAngle = 20;
+              //每次间隔
+              addAngle = config.addangle;
+              //节拍次数
+              // times = config;
+              //时间间隔
+              clocks = config.clocks;
+              mstimes = 60*1000.0/times;
+              mscounts = maxAngle * 2 / addAngle;
+
+              setTimeout(takeTime, 0);
+              break;
+            }
+          }
+      }
+
+      //获取配置值
+      getConfig();
 
       var takeTime = function(){
         //绘制背景
@@ -500,7 +532,7 @@
         } else {
           angle = 0;
           addAngle = Math.abs(addAngle);
-          //范围从30-200
+          //范围从30-130
           createMark(angle, times);
           //开始按钮的三角形
           createLines({x: width / 2 - 6, y: height - 60},
@@ -536,32 +568,14 @@
           if (tmptimes < 30){
             tmptimes = 30;
           } 
-          if (tmptimes > 200){
-            tmptimes = 200;
+          if (tmptimes > 130){
+            tmptimes = 130;
           }
 
           document.getElementById("timesInput").value = tmptimes;
           times = tmptimes;
           
-          //从配置文件那里得出所有的数据
-          for (var i = 0, len = configs.length; i < len; i++){
-            var config = configs[i];
-            if (config.num == times){
-              //最大角度
-              //maxAngle = 20;
-              //每次间隔
-              addAngle = config.addangle;
-              //节拍次数
-              // times = config;
-              //时间间隔
-              clocks = config.clocks;
-              mstimes = 2*60*1000.0/times;
-              mscounts = maxAngle * 2 / addAngle;
-
-              setTimeout(takeTime, 0);
-              break;
-            }
-          }
+          getConfig();
       });
 
     </script>
